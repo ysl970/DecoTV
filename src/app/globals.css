@@ -65,6 +65,55 @@ body {
   opacity: 1;
 }
 
+/* 夸张霓虹闪烁与辉光 */
+@keyframes neonFlicker {
+  0%, 13%, 16%, 25%, 30%, 70%, 100% { filter: drop-shadow(0 0 0px rgba(0,0,0,0)); opacity: 1; }
+  14% { filter: drop-shadow(0 0 8px rgba(99,102,241,0.8)) drop-shadow(0 0 16px rgba(16,185,129,0.6)); }
+  26% { filter: drop-shadow(0 0 10px rgba(236,72,153,0.8)) drop-shadow(0 0 20px rgba(59,130,246,0.6)); }
+  71% { filter: drop-shadow(0 0 12px rgba(16,185,129,0.8)) drop-shadow(0 0 24px rgba(236,72,153,0.6)); }
+}
+
+.neon-flicker {
+  animation: neonFlicker 2.8s ease-in-out infinite;
+}
+
+/* 分类专属渐变与光晕 */
+.chip-theme { position: relative; isolation: isolate; }
+.chip-theme::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: 9999px; z-index: -1; opacity: .85;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.chip-theme:hover::before { opacity: 1; transform: scale(1.02); }
+
+/* 首页 */
+.chip-home { background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.14)); border-color: rgba(59,130,246,.35); }
+.chip-home::before { background: radial-gradient(70% 70% at 50% 50%, rgba(59,130,246,.35), transparent 70%); }
+
+/* 搜索 */
+.chip-search { background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.14)); border-color: rgba(99,102,241,.35); }
+.chip-search::before { background: radial-gradient(70% 70% at 50% 50%, rgba(99,102,241,.35), transparent 70%); }
+
+/* 电影：粉橙霓虹 */
+.chip-movie { background: linear-gradient(90deg, rgba(244,114,182,.35), rgba(251,146,60,.35)); border-color: rgba(244,114,182,.45); }
+.chip-movie::before { background: radial-gradient(70% 70% at 50% 50%, rgba(251,146,60,.45), rgba(244,114,182,.45) 60%, transparent 85%); }
+
+/* 剧集：紫蓝霓虹 */
+.chip-tv { background: linear-gradient(90deg, rgba(168,85,247,.35), rgba(59,130,246,.35)); border-color: rgba(168,85,247,.45); }
+.chip-tv::before { background: radial-gradient(70% 70% at 50% 50%, rgba(59,130,246,.45), rgba(168,85,247,.45) 60%, transparent 85%); }
+
+/* 动漫：青绿霓虹 */
+.chip-anime { background: linear-gradient(90deg, rgba(20,184,166,.35), rgba(16,185,129,.35)); border-color: rgba(16,185,129,.45); }
+.chip-anime::before { background: radial-gradient(70% 70% at 50% 50%, rgba(20,184,166,.45), rgba(16,185,129,.45) 60%, transparent 85%); }
+
+/* 综艺：金柠霓虹 */
+.chip-show { background: linear-gradient(90deg, rgba(250,204,21,.35), rgba(251,191,36,.35)); border-color: rgba(251,191,36,.5); }
+.chip-show::before { background: radial-gradient(70% 70% at 50% 50%, rgba(250,204,21,.45), rgba(251,191,36,.45) 60%, transparent 85%); }
+
+/* 直播：品红霓虹 */
+.chip-live { background: linear-gradient(90deg, rgba(236,72,153,.35), rgba(244,63,94,.35)); border-color: rgba(236,72,153,.5); }
+.chip-live::before { background: radial-gradient(70% 70% at 50% 50%, rgba(244,63,94,.45), rgba(236,72,153,.45) 60%, transparent 85%); }
+
 html:not(.dark) body {
   background: linear-gradient(
     180deg,
