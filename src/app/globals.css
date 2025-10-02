@@ -46,6 +46,25 @@ body {
   backdrop-filter: blur(16px);
 }
 
+/* Chip subtle glow animation */
+.chip-glow {
+  position: relative;
+}
+.chip-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(16,185,129,0.25), rgba(99,102,241,0.15) 60%, transparent 100%);
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.chip-glow:hover::after {
+  opacity: 1;
+}
+
 html:not(.dark) body {
   background: linear-gradient(
     180deg,
@@ -57,6 +76,23 @@ html:not(.dark) body {
     #d3dde6 100%
   );
   background-attachment: fixed;
+}
+
+/* 动态渐变闪烁背景粒子层（轻量） */
+.bg-animated-gradient::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(800px 800px at 10% 10%, rgba(99,102,241,0.08), transparent 60%),
+              radial-gradient(800px 800px at 90% 20%, rgba(16,185,129,0.08), transparent 60%),
+              radial-gradient(800px 800px at 50% 90%, rgba(236,72,153,0.08), transparent 60%);
+  pointer-events: none;
+  animation: bgFloat 16s ease-in-out infinite alternate;
+}
+
+@keyframes bgFloat {
+  0% { transform: translateY(-10px) scale(1); filter: hue-rotate(0deg); }
+  100% { transform: translateY(10px) scale(1.02); filter: hue-rotate(20deg); }
 }
 
 /* Card base glassmorphism */
