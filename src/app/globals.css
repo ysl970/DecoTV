@@ -114,6 +114,55 @@ body {
 .chip-live { background: linear-gradient(90deg, rgba(236,72,153,.35), rgba(244,63,94,.35)); border-color: rgba(236,72,153,.5); }
 .chip-live::before { background: radial-gradient(70% 70% at 50% 50%, rgba(244,63,94,.45), rgba(236,72,153,.45) 60%, transparent 85%); }
 
+/* 移动端底部导航霓虹主题 */
+.mbnav {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.mbnav-item {
+  position: relative;
+  transition: transform .25s ease, color .25s ease;
+}
+.mbnav-item::after {
+  content: '';
+  position: absolute; inset: auto 15% 6px 15%; height: 6px; border-radius: 9999px;
+  background: radial-gradient(50% 100% at 50% 100%, currentColor, transparent 70%);
+  opacity: 0; filter: blur(6px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.mbnav-item:hover { transform: translateY(-2px); }
+.mbnav-item:hover::after { opacity: .55; transform: translateY(2px); }
+.mbnav-item-active { text-shadow: 0 0 8px currentColor; }
+
+/* 底部导航分类色系（与桌面一致） */
+.mb-home { color: #3b82f6; }
+.mb-search { color: #6366f1; }
+.mb-movie { color: #f59e0b; }
+.mb-tv { color: #a855f7; }
+.mb-anime { color: #10b981; }
+.mb-show { color: #facc15; }
+.mb-live { color: #ec4899; }
+
+/* 按钮/卡片悬停高光轨迹 */
+.hover-beam {
+  position: relative; overflow: hidden; isolation: isolate;
+}
+.hover-beam::before {
+  content: '';
+  position: absolute; top: -150%; left: -50%; width: 60%; height: 300%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.18) 45%, transparent 60%);
+  transform: rotate(20deg);
+  transition: transform .7s ease;
+}
+.hover-beam:hover::before { transform: rotate(20deg) translateX(200%); }
+
+/* 过场加强：淡入上滑组合 */
+@keyframes superFadeSlide {
+  from { opacity: 0; transform: translateY(14px) scale(0.99); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.enter-animate { animation: superFadeSlide .5s cubic-bezier(.22,.61,.36,1) both; }
+
 html:not(.dark) body {
   background: linear-gradient(
     180deg,
