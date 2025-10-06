@@ -7,31 +7,38 @@
 import crypto from 'crypto';
 
 // 高可用 JAR 候选源配置 - 针对不同网络环境优化
-// 策略：多源并发检测 + 地区优化 + 实时健康检查
+// 策略：多源并发检测 + 地区优化 + 实时健康检查 + 稳定性排序
 const DOMESTIC_CANDIDATES: string[] = [
-  // 国内优先源（低延迟，适合国内用户）
+  // 国内优先源（低延迟，适合国内用户）- 按稳定性排序
+  'https://pan.shangui.cc/f/VGyEIg/XC.jar', // 高稳定性云盘源
+  'https://od.lk/s/MF8yMzU5NTAyOTlf/XC.jar', // 国际云盘备份
   'https://gitcode.net/qq_26898231/TVBox/-/raw/main/JAR/XC.jar', // gitcode（国内服务器）
   'https://gitee.com/q215613905/TVBoxOS/raw/main/JAR/XC.jar', // gitee（国内服务器）
   'https://cdn.gitcode.net/qq_26898231/TVBox/-/raw/main/JAR/XC.jar', // gitcode CDN
   'https://cdn.gitee.com/q215613905/TVBoxOS/raw/main/JAR/XC.jar', // gitee CDN
-  'https://deco-spider.oss-cn-hangzhou.aliyuncs.com/XC.jar', // 阿里云 OSS
-  'https://deco-spider-1250000000.cos.ap-shanghai.myqcloud.com/XC.jar', // 腾讯云 COS
+  'https://agit.ai/Yoursmile7/TVBox/raw/branch/master/XC.jar', // Agit 国内代码托管
+  'https://codeberg.org/jark/TVBox/raw/branch/main/XC.jar', // Codeberg 欧洲服务器
 ];
 
 const INTERNATIONAL_CANDIDATES: string[] = [
-  // 国际源（适合海外用户或国内访问受限时）
+  // 国际源（适合海外用户或国内访问受限时）- 优化稳定性
   'https://cdn.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // jsDelivr 全球 CDN
   'https://cdn.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/spider.jar', // jsDelivr 备用
   'https://fastly.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // Fastly CDN
+  'https://unpkg.com/@catvodcore/spider@latest/spider.jar', // NPM CDN
+  'https://gcore.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // GCore 全球 CDN
   'https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar', // GitHub 原始
   'https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/spider.jar', // GitHub 备用
 ];
 
 const PROXY_CANDIDATES: string[] = [
-  // 代理源（最后备选，解决网络封锁问题）
+  // 代理源（最后备选，解决网络封锁问题）- 多重代理保障
   'https://ghproxy.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
   'https://github.moeyy.xyz/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
   'https://mirror.ghproxy.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
+  'https://ghps.cc/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
+  'https://hub.gitmirror.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
+  'https://raw.kgithub.com/hjdhnx/dr_py/main/js/drpy.jar',
 ];
 
 // 动态候选源选择 - 根据当前环境智能选择最优源
@@ -55,24 +62,58 @@ function getCandidates(): string[] {
   }
 }
 
-// 检测是否为国内网络环境
+// 智能检测网络环境 - 多维度判断
 function isLikelyDomesticEnvironment(): boolean {
   try {
-    // 检查时区（简单判断）
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz.includes('Asia/Shanghai') || tz.includes('Asia/Chongqing')) {
-      return true;
+    // 服务器环境检测
+    if (typeof window === 'undefined') {
+      // Node.js 环境，检查环境变量和请求头
+      const region =
+        process.env.VERCEL_REGION || process.env.DEPLOY_REGION || '';
+      const country = process.env.COUNTRY || process.env.CF_IPCOUNTRY || '';
+
+      // Vercel 亚洲区域或明确的中国标识
+      if (
+        region.includes('hkg') ||
+        region.includes('sin') ||
+        region.includes('nrt') ||
+        country === 'CN' ||
+        country === 'HK' ||
+        country === 'TW'
+      ) {
+        return true;
+      }
+    } else {
+      // 浏览器环境检测
+      // 检查时区
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (
+        tz.includes('Asia/Shanghai') ||
+        tz.includes('Asia/Chongqing') ||
+        tz.includes('Asia/Hong_Kong') ||
+        tz.includes('Asia/Taipei')
+      ) {
+        return true;
+      }
+
+      // 检查语言设置
+      const lang = navigator.language || navigator.languages?.[0] || '';
+      if (lang.startsWith('zh-CN') || lang.startsWith('zh-Hans')) {
+        return true;
+      }
     }
 
-    // 检查语言设置
-    const lang = typeof navigator !== 'undefined' ? navigator.language : 'en';
-    if (lang.startsWith('zh-CN')) {
+    // 检查网络延迟特征（简单启发式）
+    const hour = new Date().getHours();
+    // 在UTC+8的工作时间更可能是国内访问
+    if (hour >= 1 && hour <= 9) {
+      // UTC时间对应北京时间9-17点
       return true;
     }
 
     return false;
   } catch {
-    return false; // 默认国际环境
+    return false; // 默认国际环境，更安全
   }
 }
 
@@ -121,17 +162,39 @@ async function fetchRemote(
         Connection: 'close',
       };
 
-      // 针对不同源优化 User-Agent
+      // 高级 User-Agent 策略 - 提高成功率
       if (url.includes('github') || url.includes('raw.githubusercontent')) {
-        headers['User-Agent'] = 'curl/7.68.0'; // GitHub 友好
-      } else if (url.includes('gitee') || url.includes('gitcode')) {
+        // GitHub 对某些 User-Agent 更宽松
         headers['User-Agent'] =
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'; // 国内源友好
-      } else if (url.includes('jsdelivr') || url.includes('fastly')) {
-        headers['User-Agent'] = 'DecoTV/1.0'; // CDN 源简洁标识
+          attempt % 2 === 0 ? 'curl/8.0.0' : 'wget/1.21.0 (linux-gnu)';
+      } else if (
+        url.includes('gitee') ||
+        url.includes('gitcode') ||
+        url.includes('agit.ai')
+      ) {
+        // 国内Git服务，使用浏览器标识
+        headers['User-Agent'] =
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      } else if (
+        url.includes('jsdelivr') ||
+        url.includes('fastly') ||
+        url.includes('unpkg')
+      ) {
+        // CDN 服务，简洁标识即可
+        headers['User-Agent'] = 'DecoTV-Spider/2.0';
+      } else if (url.includes('pan.') || url.includes('od.lk')) {
+        // 云盘服务，模拟浏览器下载
+        headers['User-Agent'] =
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+        headers['Referer'] = new URL(url).origin + '/';
+      } else if (url.includes('proxy') || url.includes('mirror')) {
+        // 代理服务，避免被识别为爬虫
+        headers['User-Agent'] =
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        headers['Accept-Language'] = 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7';
       } else {
         headers['User-Agent'] =
-          'Mozilla/5.0 (Linux; Android 11; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36';
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       }
 
       const resp = await fetch(url, {
@@ -186,6 +249,52 @@ function md5(buf: Buffer): string {
   return crypto.createHash('md5').update(buf).digest('hex');
 }
 
+// 并发获取策略 - 同时尝试多个源以提高成功率
+async function fetchWithConcurrency(
+  candidates: string[],
+  maxConcurrent = 3
+): Promise<{ buffer: Buffer; source: string; tried: number } | null> {
+  let tried = 0;
+
+  // 分批并发请求
+  for (let i = 0; i < candidates.length; i += maxConcurrent) {
+    const batch = candidates.slice(i, i + maxConcurrent);
+    tried += batch.length;
+
+    // 并发尝试批次
+
+    // 并发请求当前批次
+    const promises = batch.map(async (url) => {
+      try {
+        const buffer = await fetchRemote(url, 12000, 1); // 降低单个请求的重试次数
+        if (buffer) {
+          return { buffer, source: url };
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    });
+
+    // 等待第一个成功的结果
+    const results = await Promise.allSettled(promises);
+
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        // 并发获取成功
+        return { ...result.value, tried };
+      }
+    }
+
+    // 如果当前批次都失败了，等待一下再尝试下一批
+    if (i + maxConcurrent < candidates.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  return null;
+}
+
 export async function getSpiderJar(
   forceRefresh = false
 ): Promise<SpiderJarInfo> {
@@ -195,17 +304,19 @@ export async function getSpiderJar(
   if (now - lastFailureReset > FAILURE_RESET_INTERVAL) {
     failedSources.clear();
     lastFailureReset = now;
+    // 重置失败源记录
   }
 
   // 动态TTL检查
   if (!forceRefresh && cache) {
     const ttl = cache.success ? SUCCESS_TTL : FAILURE_TTL;
     if (now - cache.timestamp < ttl) {
+      // 使用缓存的JAR
       return { ...cache, cached: true };
     }
   }
 
-  let tried = 0;
+  // 开始获取新的Spider JAR
   const candidates = getCandidates();
 
   // 过滤掉近期失败的源（但允许一定时间后重试）
@@ -213,30 +324,35 @@ export async function getSpiderJar(
   const candidatesToTry =
     activeCandidates.length > 0 ? activeCandidates : candidates;
 
-  for (const url of candidatesToTry) {
-    tried += 1;
-    const buf = await fetchRemote(url);
-    if (buf) {
-      // 成功时从失败列表移除
-      failedSources.delete(url);
+  // 尝试并发获取
+  const result = await fetchWithConcurrency(candidatesToTry, 3);
 
-      const info: SpiderJarInfo = {
-        buffer: buf,
-        md5: md5(buf),
-        source: url,
-        success: true,
-        cached: false,
-        timestamp: now,
-        size: buf.length,
-        tried,
-      };
-      cache = info;
-      return info;
-    } else {
-      // 失败时添加到失败列表
-      failedSources.add(url);
-    }
+  if (result) {
+    // 成功时从失败列表移除
+    failedSources.delete(result.source);
+
+    // JAR获取成功
+
+    const info: SpiderJarInfo = {
+      buffer: result.buffer,
+      md5: md5(result.buffer),
+      source: result.source,
+      success: true,
+      cached: false,
+      timestamp: now,
+      size: result.buffer.length,
+      tried: result.tried,
+    };
+    cache = info;
+    return info;
   }
+
+  // 所有源都失败，记录失败的源
+  for (const url of candidatesToTry) {
+    failedSources.add(url);
+  }
+
+  // 所有JAR源均失败，使用内置备用JAR
 
   // fallback - 总是成功，永远不返回 404
   const fb = Buffer.from(FALLBACK_JAR_BASE64, 'base64');
@@ -248,7 +364,7 @@ export async function getSpiderJar(
     cached: false,
     timestamp: now,
     size: fb.length,
-    tried,
+    tried: candidatesToTry.length,
   };
   cache = info;
   return info;
