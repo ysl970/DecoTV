@@ -223,7 +223,18 @@ export async function GET(request: NextRequest) {
     );
 
     const testResults = reachabilityTests
-      .filter((result) => result.status === 'fulfilled')
+      .filter(
+        (
+          result
+        ): result is PromiseFulfilledResult<{
+          success: boolean;
+          responseTime: number;
+          statusCode?: number;
+          error?: string;
+          size?: number;
+          url: string;
+        }> => result.status === 'fulfilled'
+      )
       .map((result) => result.value);
 
     // 生成智能建议
