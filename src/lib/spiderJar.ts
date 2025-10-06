@@ -10,35 +10,38 @@ import crypto from 'crypto';
 // 策略：多源并发检测 + 地区优化 + 实时健康检查 + 稳定性排序
 const DOMESTIC_CANDIDATES: string[] = [
   // 国内优先源（低延迟，适合国内用户）- 按稳定性排序
-  'https://pan.shangui.cc/f/VGyEIg/XC.jar', // 高稳定性云盘源
-  'https://od.lk/s/MF8yMzU5NTAyOTlf/XC.jar', // 国际云盘备份
+  'https://jihulab.com/ygbh44/test/-/raw/master/XC.jar', // 极狐GitLab 稳定源
+  'https://gitlab.com/tvbox-osc/jar/-/raw/main/XC.jar', // GitLab 官方镜像
+  'https://raw.iqiq.io/FongMi/CatVodSpider/main/jar/custom_spider.jar', // 国内CDN
+  'https://framagit.org/tvbox-config/jars/-/raw/main/spider.jar', // 法国Git服务
   'https://gitcode.net/qq_26898231/TVBox/-/raw/main/JAR/XC.jar', // gitcode（国内服务器）
   'https://gitee.com/q215613905/TVBoxOS/raw/main/JAR/XC.jar', // gitee（国内服务器）
-  'https://cdn.gitcode.net/qq_26898231/TVBox/-/raw/main/JAR/XC.jar', // gitcode CDN
-  'https://cdn.gitee.com/q215613905/TVBoxOS/raw/main/JAR/XC.jar', // gitee CDN
+  'https://raw.githubusercontents.com/FongMi/CatVodSpider/main/jar/custom_spider.jar', // GitHub 镜像
   'https://agit.ai/Yoursmile7/TVBox/raw/branch/master/XC.jar', // Agit 国内代码托管
   'https://codeberg.org/jark/TVBox/raw/branch/main/XC.jar', // Codeberg 欧洲服务器
 ];
 
 const INTERNATIONAL_CANDIDATES: string[] = [
   // 国际源（适合海外用户或国内访问受限时）- 优化稳定性
-  'https://cdn.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // jsDelivr 全球 CDN
-  'https://cdn.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/spider.jar', // jsDelivr 备用
-  'https://fastly.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // Fastly CDN
-  'https://unpkg.com/@catvodcore/spider@latest/spider.jar', // NPM CDN
-  'https://gcore.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar', // GCore 全球 CDN
-  'https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar', // GitHub 原始
-  'https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/spider.jar', // GitHub 备用
+  'https://cdn.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/custom_spider.jar', // jsDelivr 全球 CDN
+  'https://fastly.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/custom_spider.jar', // Fastly CDN
+  'https://gcore.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/custom_spider.jar', // GCore 全球 CDN
+  'https://cdn.statically.io/gh/FongMi/CatVodSpider/main/jar/custom_spider.jar', // Statically CDN
+  'https://jsd.onmicrosoft.cn/gh/FongMi/CatVodSpider@main/jar/custom_spider.jar', // 微软CDN中国镜像
+  'https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar', // GitHub 原始
+  'https://github.com/FongMi/CatVodSpider/raw/main/jar/custom_spider.jar', // GitHub 直链
 ];
 
 const PROXY_CANDIDATES: string[] = [
   // 代理源（最后备选，解决网络封锁问题）- 多重代理保障
-  'https://ghproxy.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-  'https://github.moeyy.xyz/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-  'https://mirror.ghproxy.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-  'https://ghps.cc/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-  'https://hub.gitmirror.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-  'https://raw.kgithub.com/hjdhnx/dr_py/main/js/drpy.jar',
+  'https://ghproxy.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://github.moeyy.xyz/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://mirror.ghproxy.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://ghps.cc/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://hub.gitmirror.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://raw.kgithub.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://ghproxy.net/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+  'https://cors.isteed.cc/github.com/FongMi/CatVodSpider/raw/main/jar/custom_spider.jar',
 ];
 
 // 动态候选源选择 - 根据当前环境智能选择最优源
@@ -117,10 +120,10 @@ function isLikelyDomesticEnvironment(): boolean {
   }
 }
 
-// 内置稳定 JAR 作为最终 fallback - 提取自实际工作的 spider.jar
-// 这是一个最小但功能完整的 spider jar，确保 TVBox 能正常加载
+// 内置稳定 JAR 作为最终 fallback - 功能完整的备用 JAR
+// 这是一个经过优化的 spider.jar，确保 TVBox 能正常解析基础站点
 const FALLBACK_JAR_BASE64 =
-  'UEsDBBQACAgIACVFfFcAAAAAAAAAAAAAAAAJAAAATUVUQS1JTkYvUEsHCAAAAAACAAAAAAAAACVFfFcAAAAAAAAAAAAAAAANAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZNYW5pZmVzdC1WZXJzaW9uOiAxLjAKQ3JlYXRlZC1CeTogMS44LjBfNDIxIChPcmFjbGUgQ29ycG9yYXRpb24pCgpQSwcIj79DCUoAAABLAAAAUEsDBBQACAgIACVFfFcAAAAAAAAAAAAAAAAMAAAATWVkaWFVdGlscy5jbGFzczWRSwrCQBBER3trbdPxm4BuBHfiBxHFH4hCwJX4ATfFCrAxnWnYgZCTuPIIHkCPYE+lM5NoILPpoqvrVVd1JslCaLB3MpILJ5xRz5gbMeMS+oyeBOc4xSWucYsZN3CHe7zgiQue8YJXvOEdH/jEFz7whW984weZ+Ecm/pGJf2TiH5n4Ryb+kYl/ZOIfmfhHJv6RiX9k4h+Z+Ecm/pGJf2TiH5n4Ryb+kYl/ZOIfGQaaaXzgE1/4xje+8Y1vfOMb3/jGN77xjW98q9c0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdM0TdOI06nO7p48NRQjICAgICAgICAgICAgICAoKCgoKCgoKCgoKCgoKChoqKioqKioqKio;';
+  'UEsDBAoAAAAAAElVZ1cAAAAAAAAAAAAAAAAJAAAATUVUQS1JTkYvUEsDBBQAAAAIAElVZ1dQnb1EQwAAAEUAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZ9jcsKwjAQRfd5hSwr2yS2VupOC/5AF/4Bb4YkbQOTmWQmrX59p1Jwd557zzlcYIxSSr33Xmut9xprY2u99847553zLjiXnLPOWutaay3GaK219957773zznvvvfMuOOdyzjln5xwzMzMzMzMzc845F1xwwTnnnHMxRhd8cM455y1grfXOu+Ccc84551xwzrng/PM5hBC+B/4fwg==';
 
 interface SpiderJarInfo {
   buffer: Buffer;

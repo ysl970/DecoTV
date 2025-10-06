@@ -208,10 +208,11 @@ export async function GET(request: NextRequest) {
 
     // 测试关键源的可达性（选择代表性的源进行测试）
     const testSources = [
-      'https://gitee.com/q215613905/TVBoxOS/raw/main/JAR/XC.jar',
-      'https://cdn.jsdelivr.net/gh/hjdhnx/dr_py@main/js/drpy.jar',
-      'https://ghproxy.com/https://raw.githubusercontent.com/hjdhnx/dr_py/main/js/drpy.jar',
-      'https://pan.shangui.cc/f/VGyEIg/XC.jar',
+      'https://jihulab.com/ygbh44/test/-/raw/master/XC.jar',
+      'https://cdn.jsdelivr.net/gh/FongMi/CatVodSpider@main/jar/custom_spider.jar',
+      'https://ghproxy.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+      'https://raw.iqiq.io/FongMi/CatVodSpider/main/jar/custom_spider.jar',
+      'https://gitlab.com/tvbox-osc/jar/-/raw/main/XC.jar',
     ];
 
     // 并发测试多个源的可达性

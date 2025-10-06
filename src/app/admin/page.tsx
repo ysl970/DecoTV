@@ -5565,6 +5565,47 @@ function AdminPageClient() {
     }
   };
 
+  // JAR 修复功能
+  const handleJarFix = async () => {
+    await withLoading('jarFix', async () => {
+      try {
+        const response = await fetch('/api/tvbox/jar-fix');
+        const result = await response.json();
+
+        if (result.success) {
+          const { summary } = result;
+
+          if (summary.successful > 0) {
+            showAlert({
+              type: 'success',
+              title: '🎉 JAR修复检测完成',
+              message: `找到 ${summary.successful} 个可用源，推荐最快的源已更新`,
+              timer: 5000,
+            });
+
+            // 刷新JAR状态
+            await handleCheckJarStatus();
+          } else {
+            showAlert({
+              type: 'warning',
+              title: '⚠️ 未找到可用JAR源',
+              message: '所有JAR源均不可用，建议检查网络连接或联系管理员',
+            });
+          }
+        } else {
+          throw new Error(result.message || 'JAR修复失败');
+        }
+      } catch (error) {
+        showAlert({
+          type: 'error',
+          title: 'JAR修复失败',
+          message: error instanceof Error ? error.message : '网络错误',
+        });
+        throw error;
+      }
+    });
+  };
+
   // 新增: 重置配置处理函数
   const handleResetConfig = () => {
     setShowResetConfigModal(true);
@@ -6025,6 +6066,27 @@ function AdminPageClient() {
                           <>
                             <span>🔄</span>
                             <span>强制刷新</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleJarFix}
+                        disabled={isLoading('jarFix')}
+                        className={`px-3 py-2 rounded-md transition-colors text-sm font-medium flex items-center space-x-2 ${
+                          isLoading('jarFix')
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                      >
+                        {isLoading('jarFix') ? (
+                          <>
+                            <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                            <span>修复中...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🛠️</span>
+                            <span>一键修复</span>
                           </>
                         )}
                       </button>
