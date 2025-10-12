@@ -2654,8 +2654,15 @@ const VideoSourceConfig = ({
     if (target.from === 'config') {
       showAlert({
         type: 'warning',
-        title: '无法删除',
-        message: `"${target.name}" 是系统预设源（from=config），不能删除。只能删除自定义添加的源。`,
+        title: '无法删除系统预设源',
+        message:
+          `❌ "${target.name}" 是系统预设源（from=config），无法直接删除。\n\n` +
+          `💡 此源来自「配置文件」标签页中的 JSON 配置。\n\n` +
+          `如需删除，请：\n` +
+          `1. 前往「配置文件」标签页\n` +
+          `2. 修改或清空配置文件内容\n` +
+          `3. 保存后即可删除对应的系统预设源\n\n` +
+          `⚠️ 只有手动添加的自定义源可以直接删除。`,
       });
       return;
     }
@@ -3286,21 +3293,24 @@ const VideoSourceConfig = ({
           type: 'warning',
           title: '无法删除',
           message:
-            '选中的视频源都是系统预设源（from=config），不能删除。只能删除自定义添加的源。',
+            '❌ 选中的视频源都是系统预设源（from=config），无法删除。\n\n' +
+            '💡 这些源来自「配置文件」标签页中的 JSON 配置。\n\n' +
+            '如需删除，请：\n' +
+            '1. 前往「配置文件」标签页\n' +
+            '2. 修改或清空配置文件内容\n' +
+            '3. 保存后即可删除对应的系统预设源\n\n' +
+            '⚠️ 只有手动添加的自定义源可以直接删除。',
         });
         return;
       }
 
       if (undeletableSources.length > 0) {
-        confirmMessage = `将删除 ${
-          deletableSources.length
-        } 个自定义源。\n\n注意：${
-          undeletableSources.length
-        } 个系统预设源不能删除，将被跳过：\n${undeletableSources
-          .map((s) => s.name)
-          .join('、')}`;
+        confirmMessage =
+          `将删除 ${deletableSources.length} 个自定义源。\n\n` +
+          `⚠️ 注意：以下 ${undeletableSources.length} 个系统预设源无法删除（需在配置文件中修改）：\n` +
+          `${undeletableSources.map((s) => `• ${s.name}`).join('\n')}`;
       } else {
-        confirmMessage = `确定要删除选中的 ${deletableSources.length} 个视频源吗？此操作不可恢复！`;
+        confirmMessage = `确定要删除选中的 ${deletableSources.length} 个自定义视频源吗？\n\n此操作不可恢复！`;
       }
       actionName = '批量删除';
     } else {
@@ -3332,12 +3342,28 @@ const VideoSourceConfig = ({
             const deletableCount = sources.filter(
               (s) => selectedSources.has(s.key) && s.from === 'custom'
             ).length;
-            showAlert({
-              type: 'success',
-              title: `${actionName}成功`,
-              message: `成功删除了 ${deletableCount} 个自定义视频源`,
-              timer: 2000,
-            });
+            const undeletableCount = sources.filter(
+              (s) => selectedSources.has(s.key) && s.from !== 'custom'
+            ).length;
+
+            if (undeletableCount > 0) {
+              showAlert({
+                type: 'warning',
+                title: `部分删除成功`,
+                message:
+                  `✅ 成功删除了 ${deletableCount} 个自定义视频源\n` +
+                  `⚠️ 跳过了 ${undeletableCount} 个系统预设源\n\n` +
+                  `💡 提示：系统预设源需要在「配置文件」中修改`,
+                timer: 5000,
+              });
+            } else {
+              showAlert({
+                type: 'success',
+                title: `${actionName}成功`,
+                message: `✅ 成功删除了 ${deletableCount} 个自定义视频源`,
+                timer: 2000,
+              });
+            }
           } else {
             showAlert({
               type: 'success',
@@ -3386,6 +3412,36 @@ const VideoSourceConfig = ({
 
   return (
     <div className='space-y-6'>
+      {/* 说明提示区域 */}
+      {sources.some((s) => s.from === 'config') && (
+        <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4'>
+          <div className='flex items-start space-x-3'>
+            <div className='flex-shrink-0 mt-0.5'>
+              <svg
+                className='w-5 h-5 text-blue-600 dark:text-blue-400'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+            <div className='flex-1'>
+              <h4 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-1'>
+                💡 关于系统预设源
+              </h4>
+              <p className='text-xs text-blue-800 dark:text-blue-300'>
+                标记为「预设」的视频源来自「配置文件」标签页，无法直接删除。如需删除，请在「配置文件」中修改或清空
+                JSON 配置后保存。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 添加视频源表单 */}
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
         <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -4274,6 +4330,30 @@ const ConfigFileComponent = ({
 
   // 保存配置文件
   const handleSave = async () => {
+    // 检查是否要清空配置
+    const isEmpty = !configContent || !configContent.trim();
+
+    if (isEmpty) {
+      // 统计将被删除的系统预设源数量
+      const configSources =
+        config?.SourceConfig?.filter((s) => s.from === 'config') || [];
+
+      if (configSources.length > 0) {
+        // 需要用户确认清空操作
+        const confirmed = confirm(
+          `⚠️ 清空配置文件警告\n\n` +
+            `你正在清空配置文件，这将会：\n` +
+            `• 删除 ${configSources.length} 个系统预设视频源\n` +
+            `• 保留所有自定义添加的视频源\n\n` +
+            `确定要继续吗？`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+    }
+
     await withLoading('saveConfig', async () => {
       try {
         const resp = await fetch('/api/admin/config_file', {
@@ -4292,7 +4372,19 @@ const ConfigFileComponent = ({
           throw new Error(data.error || `保存失败: ${resp.status}`);
         }
 
-        showSuccess('配置文件保存成功', showAlert);
+        if (
+          isEmpty &&
+          (config?.SourceConfig?.filter((s) => s.from === 'config').length ??
+            0) > 0
+        ) {
+          showSuccess(
+            '配置文件已清空，系统预设视频源已删除，自定义源已保留',
+            showAlert
+          );
+        } else {
+          showSuccess('配置文件保存成功', showAlert);
+        }
+
         await refreshConfig();
       } catch (err) {
         showError(err instanceof Error ? err.message : '保存失败', showAlert);
