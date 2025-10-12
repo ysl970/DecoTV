@@ -56,19 +56,6 @@ export default function SkipConfigPanel({
     }
   };
 
-  // 解析时间字符串为秒数
-  const parseTimeString = (timeStr: string): number => {
-    const parts = timeStr.split(':').map((p) => parseInt(p, 10));
-    if (parts.length === 2) {
-      // MM:SS
-      return parts[0] * 60 + parts[1];
-    } else if (parts.length === 3) {
-      // HH:MM:SS
-      return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    }
-    return 0;
-  };
-
   // 使用当前播放时间设置片头
   const handleSetIntroFromCurrentTime = () => {
     setTempConfig((prev) => ({
@@ -106,7 +93,7 @@ export default function SkipConfigPanel({
   return (
     <div className='fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fadeIn'>
       <div
-        className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-slideUp'
+        className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-slideUp'
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}
@@ -158,8 +145,8 @@ export default function SkipConfigPanel({
           </div>
         </div>
 
-        {/* 内容区 */}
-        <div className='p-6 overflow-y-auto max-h-[calc(90vh-200px)]'>
+        {/* 内容区 - 使用 flex-1 和 overflow-y-auto */}
+        <div className='flex-1 overflow-y-auto p-6'>
           {/* 模式切换 */}
           <div className='mb-6'>
             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3'>
@@ -259,21 +246,67 @@ export default function SkipConfigPanel({
             ) : (
               <div>
                 <label className='block text-sm text-gray-700 dark:text-gray-300 mb-2'>
-                  跳到时间点（格式: MM:SS 或 HH:MM:SS）
+                  跳到时间点
                 </label>
-                <input
-                  type='text'
-                  value={formatTime(tempConfig.intro_time)}
-                  onChange={(e) => {
-                    const seconds = parseTimeString(e.target.value);
-                    setTempConfig((prev) => ({
-                      ...prev,
-                      intro_time: seconds,
-                    }));
-                  }}
-                  className='w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-mono'
-                  placeholder='例如: 1:30 或 0:01:30'
-                />
+                <div className='flex items-center space-x-2'>
+                  <input
+                    type='number'
+                    min='0'
+                    max='23'
+                    value={Math.floor(tempConfig.intro_time / 3600)}
+                    onChange={(e) => {
+                      const hours = parseInt(e.target.value) || 0;
+                      const minutes = Math.floor(
+                        (tempConfig.intro_time % 3600) / 60
+                      );
+                      const seconds = tempConfig.intro_time % 60;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        intro_time: hours * 3600 + minutes * 60 + seconds,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='时'
+                  />
+                  <span className='text-xl font-bold text-gray-500'>:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='59'
+                    value={Math.floor((tempConfig.intro_time % 3600) / 60)}
+                    onChange={(e) => {
+                      const hours = Math.floor(tempConfig.intro_time / 3600);
+                      const minutes = parseInt(e.target.value) || 0;
+                      const seconds = tempConfig.intro_time % 60;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        intro_time: hours * 3600 + minutes * 60 + seconds,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='分'
+                  />
+                  <span className='text-xl font-bold text-gray-500'>:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='59'
+                    value={tempConfig.intro_time % 60}
+                    onChange={(e) => {
+                      const hours = Math.floor(tempConfig.intro_time / 3600);
+                      const minutes = Math.floor(
+                        (tempConfig.intro_time % 3600) / 60
+                      );
+                      const seconds = parseInt(e.target.value) || 0;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        intro_time: hours * 3600 + minutes * 60 + seconds,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='秒'
+                  />
+                </div>
                 <p className='mt-2 text-sm text-gray-600 dark:text-gray-400'>
                   💡 从 0:00 跳到 {formatTime(tempConfig.intro_time)}
                 </p>
@@ -343,25 +376,96 @@ export default function SkipConfigPanel({
             ) : (
               <div>
                 <label className='block text-sm text-gray-700 dark:text-gray-300 mb-2'>
-                  片尾开始时间点（格式: MM:SS 或 HH:MM:SS）
+                  片尾开始时间点
                 </label>
-                <input
-                  type='text'
-                  value={
-                    videoDuration > 0
-                      ? formatTime(videoDuration + tempConfig.outro_time)
-                      : '00:00'
-                  }
-                  onChange={(e) => {
-                    const seconds = parseTimeString(e.target.value);
-                    setTempConfig((prev) => ({
-                      ...prev,
-                      outro_time: seconds - videoDuration,
-                    }));
-                  }}
-                  className='w-full px-4 py-3 border-2 border-orange-300 dark:border-orange-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg font-mono'
-                  placeholder='例如: 21:00'
-                />
+                <div className='flex items-center space-x-2'>
+                  <input
+                    type='number'
+                    min='0'
+                    max='23'
+                    value={
+                      videoDuration > 0
+                        ? Math.floor(
+                            (videoDuration + tempConfig.outro_time) / 3600
+                          )
+                        : 0
+                    }
+                    onChange={(e) => {
+                      const hours = parseInt(e.target.value) || 0;
+                      const currentOutroTime =
+                        videoDuration + tempConfig.outro_time;
+                      const minutes = Math.floor(
+                        (currentOutroTime % 3600) / 60
+                      );
+                      const seconds = currentOutroTime % 60;
+                      const newOutroTime =
+                        hours * 3600 + minutes * 60 + seconds;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        outro_time: newOutroTime - videoDuration,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-orange-300 dark:border-orange-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='时'
+                  />
+                  <span className='text-xl font-bold text-gray-500'>:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='59'
+                    value={
+                      videoDuration > 0
+                        ? Math.floor(
+                            ((videoDuration + tempConfig.outro_time) % 3600) /
+                              60
+                          )
+                        : 0
+                    }
+                    onChange={(e) => {
+                      const currentOutroTime =
+                        videoDuration + tempConfig.outro_time;
+                      const hours = Math.floor(currentOutroTime / 3600);
+                      const minutes = parseInt(e.target.value) || 0;
+                      const seconds = currentOutroTime % 60;
+                      const newOutroTime =
+                        hours * 3600 + minutes * 60 + seconds;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        outro_time: newOutroTime - videoDuration,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-orange-300 dark:border-orange-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='分'
+                  />
+                  <span className='text-xl font-bold text-gray-500'>:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='59'
+                    value={
+                      videoDuration > 0
+                        ? (videoDuration + tempConfig.outro_time) % 60
+                        : 0
+                    }
+                    onChange={(e) => {
+                      const currentOutroTime =
+                        videoDuration + tempConfig.outro_time;
+                      const hours = Math.floor(currentOutroTime / 3600);
+                      const minutes = Math.floor(
+                        (currentOutroTime % 3600) / 60
+                      );
+                      const seconds = parseInt(e.target.value) || 0;
+                      const newOutroTime =
+                        hours * 3600 + minutes * 60 + seconds;
+                      setTempConfig((prev) => ({
+                        ...prev,
+                        outro_time: newOutroTime - videoDuration,
+                      }));
+                    }}
+                    className='w-20 px-3 py-3 border-2 border-orange-300 dark:border-orange-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg font-mono text-center'
+                    placeholder='秒'
+                  />
+                </div>
                 <p className='mt-2 text-sm text-gray-600 dark:text-gray-400'>
                   💡 播放到{' '}
                   {videoDuration > 0
@@ -430,24 +534,24 @@ export default function SkipConfigPanel({
           )}
         </div>
 
-        {/* 底部按钮 */}
-        <div className='p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between'>
+        {/* 底部按钮 - 固定在底部 */}
+        <div className='flex-shrink-0 p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between'>
           <button
             onClick={handleReset}
-            className='px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium'
+            className='px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors font-medium text-sm'
           >
             重置设置
           </button>
           <div className='flex space-x-3'>
             <button
               onClick={onClose}
-              className='px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium'
+              className='px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium text-sm'
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className='px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 font-medium'
+              className='px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 font-medium text-sm'
             >
               保存设置
             </button>

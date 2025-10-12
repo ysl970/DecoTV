@@ -27,6 +27,7 @@ import { getVideoResolutionFromM3u8, processImageUrl } from '@/lib/utils';
 import EpisodeSelector from '@/components/EpisodeSelector';
 import PageLayout from '@/components/PageLayout';
 import SkipConfigPanel from '@/components/SkipConfigPanel';
+import Toast from '@/components/Toast';
 
 // 扩展 HTMLVideoElement 类型以支持 hls 属性
 declare global {
@@ -193,6 +194,25 @@ function PlayPageClient() {
 
   // 跳过片头片尾设置面板状态
   const [isSkipConfigPanelOpen, setIsSkipConfigPanelOpen] = useState(false);
+
+  // Toast 通知状态
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
+
+  // 显示 Toast 通知
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' | 'info' = 'info'
+  ) => {
+    setToast({ show: true, message, type });
+  };
 
   // 换源加载状态
   const [isVideoLoading, setIsVideoLoading] = useState(true);
@@ -529,8 +549,15 @@ function PlayPageClient() {
 
     try {
       setSkipConfig(newConfig);
+
+      // 保存到 localStorage 用于持久化
+      const storageKey = `skip_config_${currentSourceRef.current}_${currentIdRef.current}`;
+      localStorage.setItem(storageKey, JSON.stringify(newConfig));
+
       if (!newConfig.enable && !newConfig.intro_time && !newConfig.outro_time) {
         await deleteSkipConfig(currentSourceRef.current, currentIdRef.current);
+        localStorage.removeItem(storageKey);
+        showToast('已清除跳过设置', 'info');
         artPlayerRef.current.setting.update({
           name: '跳过片头片尾',
           html: '跳过片头片尾',
@@ -594,10 +621,27 @@ function PlayPageClient() {
           currentIdRef.current,
           newConfig
         );
+
+        // 显示 Toast 通知
+        const introText =
+          newConfig.intro_time > 0
+            ? `片头: ${formatTime(newConfig.intro_time)}`
+            : '';
+        const outroText =
+          newConfig.outro_time < 0
+            ? `片尾: 提前 ${formatTime(Math.abs(newConfig.outro_time))}`
+            : '';
+        const separator = introText && outroText ? '\n' : '';
+        const message = newConfig.enable
+          ? `跳过设置已保存\n${introText}${separator}${outroText}`
+          : '跳过功能已关闭';
+
+        showToast(message, 'success');
       }
       console.log('跳过片头片尾配置已保存:', newConfig);
     } catch (err) {
       console.error('保存跳过片头片尾配置失败:', err);
+      showToast('保存失败，请重试', 'error');
     }
   };
 
@@ -843,9 +887,22 @@ function PlayPageClient() {
       if (!currentSource || !currentId) return;
 
       try {
-        const config = await getSkipConfig(currentSource, currentId);
-        if (config) {
+        // 首先从 localStorage 读取
+        const storageKey = `skip_config_${currentSource}_${currentId}`;
+        const localConfig = localStorage.getItem(storageKey);
+
+        if (localConfig) {
+          const config = JSON.parse(localConfig);
           setSkipConfig(config);
+          console.log('从 localStorage 恢复跳过配置:', config);
+        } else {
+          // 如果 localStorage 没有，再尝试从数据库读取
+          const config = await getSkipConfig(currentSource, currentId);
+          if (config) {
+            setSkipConfig(config);
+            // 同步到 localStorage
+            localStorage.setItem(storageKey, JSON.stringify(config));
+          }
         }
       } catch (err) {
         console.error('读取跳过片头片尾配置失败:', err);
@@ -853,7 +910,7 @@ function PlayPageClient() {
     };
 
     initSkipConfig();
-  }, []);
+  }, [currentSource, currentId]);
 
   // 处理换源
   const handleSourceChange = async (
@@ -1585,32 +1642,41 @@ function PlayPageClient() {
         // 跳过片头
         if (
           skipConfigRef.current.intro_time > 0 &&
-          currentTime < skipConfigRef.current.intro_time
+          currentTime < skipConfigRef.current.intro_time &&
+          currentTime > 0.5 // 避免刚开始播放就触发
         ) {
-          artPlayerRef.current.currentTime = skipConfigRef.current.intro_time;
-          artPlayerRef.current.notice.show = `已跳过片头 (${formatTime(
+          console.log(
+            '跳过片头: 从',
+            currentTime,
+            '跳到',
             skipConfigRef.current.intro_time
-          )})`;
+          );
+          artPlayerRef.current.currentTime = skipConfigRef.current.intro_time;
+          artPlayerRef.current.notice.show = `✨ 已跳过片头，跳到 ${formatTime(
+            skipConfigRef.current.intro_time
+          )}`;
         }
 
         // 跳过片尾
         if (
           skipConfigRef.current.outro_time < 0 &&
           duration > 0 &&
-          currentTime >
-            artPlayerRef.current.duration + skipConfigRef.current.outro_time
+          currentTime >= duration + skipConfigRef.current.outro_time &&
+          currentTime < duration - 1 // 避免在最后一秒重复触发
         ) {
+          console.log('跳过片尾: 在', currentTime, '触发跳转');
           if (
             currentEpisodeIndexRef.current <
             (detailRef.current?.episodes?.length || 1) - 1
           ) {
-            handleNextEpisode();
+            artPlayerRef.current.notice.show = `⏭️ 已跳过片尾，自动播放下一集`;
+            setTimeout(() => {
+              handleNextEpisode();
+            }, 500);
           } else {
+            artPlayerRef.current.notice.show = `✅ 已跳过片尾（已是最后一集）`;
             artPlayerRef.current.pause();
           }
-          artPlayerRef.current.notice.show = `已跳过片尾 (${formatTime(
-            skipConfigRef.current.outro_time
-          )})`;
         }
       });
 
@@ -2147,6 +2213,16 @@ function PlayPageClient() {
         videoDuration={artPlayerRef.current?.duration || 0}
         currentTime={artPlayerRef.current?.currentTime || 0}
       />
+
+      {/* Toast 通知 */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3000}
+          onClose={() => setToast({ show: false, message: '', type: 'info' })}
+        />
+      )}
     </PageLayout>
   );
 }
