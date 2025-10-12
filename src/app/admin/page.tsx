@@ -2965,7 +2965,10 @@ const VideoSourceConfig = ({
   };
 
   // 导入视频源
-  const handleImportSources = async (file: File) => {
+  const handleImportSources = async (
+    file: File,
+    onProgress?: (current: number, total: number) => void
+  ) => {
     try {
       const text = await file.text();
       const importData = JSON.parse(text);
@@ -2986,8 +2989,16 @@ const VideoSourceConfig = ({
         }>,
       };
 
-      // 逐个导入
-      for (const item of importData) {
+      const total = importData.length;
+
+      // 逐个导入，并更新进度
+      for (let i = 0; i < importData.length; i++) {
+        const item = importData[i];
+
+        // 更新进度
+        if (onProgress) {
+          onProgress(i + 1, total);
+        }
         try {
           // 验证必要字段
           if (!item.name || !item.key || !item.api) {

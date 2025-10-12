@@ -2,6 +2,7 @@
 
 import { AlertCircle, CheckCircle, Download, Upload, X } from 'lucide-react';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ImportResult {
   success: number;
@@ -19,7 +20,10 @@ interface ImportExportModalProps {
   isOpen: boolean;
   mode: 'import' | 'export' | 'result';
   onClose: () => void;
-  onImport?: (file: File) => Promise<ImportResult>;
+  onImport?: (
+    file: File,
+    onProgress?: (current: number, total: number) => void
+  ) => Promise<ImportResult>;
   onExport?: () => void;
   result?: ImportResult;
 }
@@ -34,6 +38,10 @@ export default function ImportExportModal({
 }: ImportExportModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [importProgress, setImportProgress] = useState({
+    current: 0,
+    total: 0,
+  });
 
   if (!isOpen) return null;
 
@@ -44,12 +52,17 @@ export default function ImportExportModal({
     }
 
     setIsProcessing(true);
+    setImportProgress({ current: 0, total: 0 });
+
     try {
       if (onImport) {
-        await onImport(file);
+        await onImport(file, (current, total) => {
+          setImportProgress({ current, total });
+        });
       }
     } finally {
       setIsProcessing(false);
+      setImportProgress({ current: 0, total: 0 });
     }
   };
 
@@ -78,7 +91,7 @@ export default function ImportExportModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div className='fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4'>
       <div className='bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden'>
         {/* 头部 - 更紧凑的设计 */}
@@ -112,7 +125,9 @@ export default function ImportExportModal({
                 </h2>
                 <p className='text-white/80 text-xs mt-0.5'>
                   {mode === 'import'
-                    ? '从 JSON 文件导入配置'
+                    ? isProcessing && importProgress.total > 0
+                      ? `正在导入 ${importProgress.current}/${importProgress.total}`
+                      : '从 JSON 文件导入配置'
                     : mode === 'export'
                     ? '导出为 JSON 文件'
                     : '查看导入详情'}
@@ -121,11 +136,36 @@ export default function ImportExportModal({
             </div>
             <button
               onClick={onClose}
-              className='text-white/80 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-all'
+              disabled={isProcessing}
+              className={`text-white/80 hover:text-white hover:bg-white/20 p-1.5 rounded-lg transition-all ${
+                isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <X className='w-5 h-5' />
             </button>
           </div>
+
+          {/* 导入进度条 */}
+          {isProcessing && importProgress.total > 0 && (
+            <div className='mt-3'>
+              <div className='flex items-center justify-between text-white/90 text-xs mb-1'>
+                <span>导入进度</span>
+                <span className='font-mono font-semibold'>
+                  {importProgress.current}/{importProgress.total}
+                </span>
+              </div>
+              <div className='h-2 bg-white/20 rounded-full overflow-hidden'>
+                <div
+                  className='h-full bg-white/90 transition-all duration-300 ease-out'
+                  style={{
+                    width: `${
+                      (importProgress.current / importProgress.total) * 100
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 内容区 - 优化间距 */}
@@ -321,7 +361,12 @@ export default function ImportExportModal({
           )}
           <button
             onClick={onClose}
-            className='px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium'
+            disabled={isProcessing}
+            className={`px-4 py-2 text-sm rounded-lg transition-colors font-medium ${
+              isProcessing
+                ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
           >
             {mode === 'result' ? '完成' : '取消'}
           </button>
@@ -329,4 +374,8 @@ export default function ImportExportModal({
       </div>
     </div>
   );
+
+  // 使用 createPortal 渲染到 body，确保覆盖整个页面
+  if (typeof window === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
