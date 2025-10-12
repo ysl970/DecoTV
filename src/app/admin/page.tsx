@@ -2647,6 +2647,19 @@ const VideoSourceConfig = ({
   };
 
   const handleDelete = (key: string) => {
+    const target = sources.find((s) => s.key === key);
+    if (!target) return;
+
+    // 检查是否是系统预设源
+    if (target.from === 'config') {
+      showAlert({
+        type: 'warning',
+        title: '无法删除',
+        message: `"${target.name}" 是系统预设源（from=config），不能删除。只能删除自定义添加的源。`,
+      });
+      return;
+    }
+
     withLoading(`deleteSource_${key}`, () =>
       callSourceApi({ action: 'delete', key })
     ).catch(() => {
@@ -3124,7 +3137,17 @@ const VideoSourceConfig = ({
           />
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100'>
-          {source.name}
+          <div className='flex items-center space-x-2'>
+            <span>{source.name}</span>
+            {source.from === 'config' && (
+              <span
+                className='px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                title='系统预设源，不可删除'
+              >
+                预设
+              </span>
+            )}
+          </div>
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100'>
           {source.key}
@@ -3249,19 +3272,48 @@ const VideoSourceConfig = ({
     let confirmMessage = '';
     let actionName = '';
 
-    switch (action) {
-      case 'batch_enable':
-        confirmMessage = `确定要启用选中的 ${keys.length} 个视频源吗？`;
-        actionName = '批量启用';
-        break;
-      case 'batch_disable':
-        confirmMessage = `确定要禁用选中的 ${keys.length} 个视频源吗？`;
-        actionName = '批量禁用';
-        break;
-      case 'batch_delete':
-        confirmMessage = `确定要删除选中的 ${keys.length} 个视频源吗？此操作不可恢复！`;
-        actionName = '批量删除';
-        break;
+    // 对于批量删除，检查哪些是可以删除的（from='custom'）
+    if (action === 'batch_delete') {
+      const deletableSources = sources.filter(
+        (s) => selectedSources.has(s.key) && s.from === 'custom'
+      );
+      const undeletableSources = sources.filter(
+        (s) => selectedSources.has(s.key) && s.from !== 'custom'
+      );
+
+      if (deletableSources.length === 0) {
+        showAlert({
+          type: 'warning',
+          title: '无法删除',
+          message:
+            '选中的视频源都是系统预设源（from=config），不能删除。只能删除自定义添加的源。',
+        });
+        return;
+      }
+
+      if (undeletableSources.length > 0) {
+        confirmMessage = `将删除 ${
+          deletableSources.length
+        } 个自定义源。\n\n注意：${
+          undeletableSources.length
+        } 个系统预设源不能删除，将被跳过：\n${undeletableSources
+          .map((s) => s.name)
+          .join('、')}`;
+      } else {
+        confirmMessage = `确定要删除选中的 ${deletableSources.length} 个视频源吗？此操作不可恢复！`;
+      }
+      actionName = '批量删除';
+    } else {
+      switch (action) {
+        case 'batch_enable':
+          confirmMessage = `确定要启用选中的 ${keys.length} 个视频源吗？`;
+          actionName = '批量启用';
+          break;
+        case 'batch_disable':
+          confirmMessage = `确定要禁用选中的 ${keys.length} 个视频源吗？`;
+          actionName = '批量禁用';
+          break;
+      }
     }
 
     // 显示确认弹窗
@@ -3274,12 +3326,27 @@ const VideoSourceConfig = ({
           await withLoading(`batchSource_${action}`, () =>
             callSourceApi({ action, keys })
           );
-          showAlert({
-            type: 'success',
-            title: `${actionName}成功`,
-            message: `${actionName}了 ${keys.length} 个视频源`,
-            timer: 2000,
-          });
+
+          // 对于删除操作，显示实际删除的数量
+          if (action === 'batch_delete') {
+            const deletableCount = sources.filter(
+              (s) => selectedSources.has(s.key) && s.from === 'custom'
+            ).length;
+            showAlert({
+              type: 'success',
+              title: `${actionName}成功`,
+              message: `成功删除了 ${deletableCount} 个自定义视频源`,
+              timer: 2000,
+            });
+          } else {
+            showAlert({
+              type: 'success',
+              title: `${actionName}成功`,
+              message: `${actionName}了 ${keys.length} 个视频源`,
+              timer: 2000,
+            });
+          }
+
           // 重置选择状态
           setSelectedSources(new Set());
         } catch (err) {
@@ -3712,7 +3779,7 @@ const VideoSourceConfig = ({
                 </div>
 
                 <div className='mb-6'>
-                  <p className='text-sm text-gray-600 dark:text-gray-400'>
+                  <p className='text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line'>
                     {confirmModal.message}
                   </p>
                 </div>
