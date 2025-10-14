@@ -98,17 +98,13 @@ function RegisterPageClient() {
 
   // 检查注册是否启用
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.ENABLE_REGISTRATION === 'true';
-      const storage =
-        (window as any).RUNTIME_CONFIG?.STORAGE_TYPE || 'localstorage';
-      setRegistrationEnabled(enabled);
-      setStorageType(storage);
+    const enabled = process.env.NEXT_PUBLIC_ENABLE_REGISTRATION === 'true';
+    const storage = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
+    setRegistrationEnabled(enabled);
+    setStorageType(storage);
 
-      if (enabled && storage !== 'localstorage') {
-        loadCaptcha();
-      }
+    if (enabled && storage !== 'localstorage') {
+      loadCaptcha();
     }
   }, []);
 

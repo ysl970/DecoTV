@@ -93,16 +93,13 @@ function LoginPageClient() {
 
   // 在客户端挂载后设置配置
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storageType = (window as any).RUNTIME_CONFIG?.STORAGE_TYPE;
-      setShouldAskUsername(storageType && storageType !== 'localstorage');
+    const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE;
+    setShouldAskUsername(!!storageType && storageType !== 'localstorage');
 
-      const regEnabled =
-        (window as any).RUNTIME_CONFIG?.ENABLE_REGISTRATION === 'true';
-      setRegistrationEnabled(
-        regEnabled && storageType && storageType !== 'localstorage'
-      );
-    }
+    const regEnabled = process.env.NEXT_PUBLIC_ENABLE_REGISTRATION === 'true';
+    setRegistrationEnabled(
+      regEnabled && !!storageType && storageType !== 'localstorage'
+    );
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
