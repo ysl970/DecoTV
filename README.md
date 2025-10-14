@@ -294,6 +294,8 @@ NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE 选项解释：
 
 已实现播放记录和网页端同步
 
+**详细配置指南**：[OrionTV 使用指南](./docs/OrionTV使用指南.md)
+
 ## 🎥 TVbox 配置
 
 具体可见 [TVBox 配置优化说明](https://github.com/Decohererk/DecoTV/blob/main/TVBox%E9%85%8D%E7%BD%AE%E4%BC%98%E5%8C%96%E8%AF%B4%E6%98%8E.md) ,详细功能见/admin 管理页面 **TVbox 配置**
