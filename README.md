@@ -82,7 +82,10 @@
 - [🙏 致谢](#-致谢)
 - [📈 Star History](#-star-history)
 - [💝 赞赏支持](#-赞赏支持)
-
+视频源配置
+推荐配置文件
+基础版（20+站点）：config_isadult.json
+增强版（94 站点）：[configplus_isadult.json](https://www.mediafire.com/file/ff60ynj6z21iqfb/configplus_isadult.json/file)
 ## 🛠 技术栈
 
 | 分类      | 主要依赖                                                                                              |
