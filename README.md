@@ -84,7 +84,7 @@
 - [💝 赞赏支持](#-赞赏支持)
 视频源配置
 推荐配置文件
-基础版（20+站点）：config_isadult.json
+基础版（20+站点）：[config_isadult.json](https://www.mediafire.com/file/upztrjc0g1ynbzy/config_isadult.json/file)
 增强版（94 站点）：[configplus_isadult.json](https://www.mediafire.com/file/ff60ynj6z21iqfb/configplus_isadult.json/file)
 ## 🛠 技术栈
 
@@ -197,21 +197,31 @@ services:
 配置文件示例如下：
 
 ```json
+
 {
   "cache_time": 7200,
   "api_site": {
-    "dyttzy": {
-      "api": "http://xxx.com/api.php/provide/vod",
-      "name": "示例资源",
-      "detail": "http://xxx.com"
+    "site1": {
+      "api": "http://caiji.dyttzyapi.com/api.php/provide/vod",
+      "name": "电影天堂资源",
+      "detail": "http://caiji.dyttzyapi.com"
+    },
+    "site2": {
+      "api": "https://api.example2.com/vod",
+      "name": "示例资源站2",
+      "detail": "https://www.example2.com"
     }
-    // ...更多站点
   },
   "custom_category": [
     {
-      "name": "华语",
+      "name": "热门电影",
       "type": "movie",
-      "query": "华语"
+      "query": "伦理片"
+    },
+    {
+      "name": "美剧精选",
+      "type": "tv",
+      "query": "美剧"
     }
   ]
 }
