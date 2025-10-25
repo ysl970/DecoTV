@@ -83,9 +83,11 @@
 - [📈 Star History](#-star-history)
 - [💝 赞赏支持](#-赞赏支持)
 视频源配置
+
 推荐配置文件
 基础版（20+站点）：[config_isadult.json](https://www.mediafire.com/file/upztrjc0g1ynbzy/config_isadult.json/file)
 增强版（94 站点）：[configplus_isadult.json](https://www.mediafire.com/file/ff60ynj6z21iqfb/configplus_isadult.json/file)
+
 ## 🛠 技术栈
 
 | 分类      | 主要依赖                                                                                              |
@@ -113,7 +115,7 @@ services:
       - '3000:3000'
     environment:
       - USERNAME=admin
-      - PASSWORD=admin_password
+      - PASSWORD=12345678
       - NEXT_PUBLIC_STORAGE_TYPE=kvrocks
       - KVROCKS_URL=redis://decotv-kvrocks:6666
     networks:
@@ -121,7 +123,7 @@ services:
     depends_on:
       - decotv-kvrocks
   decotv-kvrocks:
-    image: apache/kvrocks
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/apache/kvrocks:latest
     container_name: decotv-kvrocks
     restart: unless-stopped
     volumes:
@@ -139,33 +141,34 @@ volumes:
 
 ```yml
 services:
-  decotv-core:
-    image: ghcr.io/decohererk/decotv:latest
-    container_name: decotv-core
+  moontv-core:
+    image: ghcr.io/moontechlab/lunatv:latest
+    container_name: moontv-core
     restart: on-failure
     ports:
       - '3000:3000'
     environment:
       - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=redis
-      - REDIS_URL=redis://decotv-redis:6379
+      - PASSWORD=12345678
+      - NEXT_PUBLIC_STORAGE_TYPE=kvrocks
+      - KVROCKS_URL=redis://moontv-kvrocks:6666
     networks:
-      - decotv-network
+      - moontv-network
     depends_on:
-      - decotv-redis
-  decotv-redis:
-    image: redis:alpine
-    container_name: decotv-redis
+      - moontv-kvrocks
+  moontv-kvrocks:
+    image: apache/kvrocks
+    container_name: moontv-kvrocks
     restart: unless-stopped
-    networks:
-      - decotv-network
-    # 请开启持久化，否则升级/重启后数据丢失
     volumes:
-      - ./data:/data
+      - kvrocks-data:/var/lib/kvrocks
+    networks:
+      - moontv-network
 networks:
-  decotv-network:
+  moontv-network:
     driver: bridge
+volumes:
+  kvrocks-data:
 ```
 
 ### Upstash 存储
